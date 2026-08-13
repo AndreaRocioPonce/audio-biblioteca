@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SoundVault | Biblioteca de Audio</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <i data-lucide="disc-3" class="logo-icon"></i>
+        <span>SoundVault</span>
+      </div>
+
+      <button class="btn-primary" id="openModalBtn">
+        <i data-lucide="plus"></i> Subir Audio
+      </button>
+
+      <nav class="nav-menu">
+        <span class="nav-title">Categorías</span>
+        <ul>
+          <li class="active" data-category="all"><i data-lucide="layers"></i> Todos los audios</li>
+          <li data-category="Cortinas"><i data-lucide="music-2"></i> Cortinas</li>
+          <li data-category="Efectos"><i data-lucide="zap"></i> Efectos (SFX)</li>
+          <li data-category="Voces"><i data-lucide="mic"></i> Voces en Off</li>
+          <li data-category="Pisadores"><i data-lucide="radio"></i> Pisadores / IDs</li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-bar">
+        <div class="search-box">
+          <i data-lucide="search"></i>
+          <input type="text" id="searchInput" placeholder="Buscar por título, categoría o etiqueta...">
+        </div>
+      </header>
+
+      <section class="library-section">
+        <h2>Biblioteca de Audios</h2>
+        
+        <table class="audio-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Título</th>
+              <th>Categoría</th>
+              <th>Etiquetas</th>
+              <th style="width: 80px; text-align: right;">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="audioList">
+            <!-- Filas dinámicas -->
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+    <!-- Bottom Player -->
+    <footer class="player-bar">
+      <div class="track-info">
+        <div class="art-placeholder"><i data-lucide="music"></i></div>
+        <div class="details">
+          <span class="title" id="playerTitle">Sin reproducción</span>
+          <span class="category" id="playerCategory">Selecciona un archivo</span>
+        </div>
+      </div>
+
+      <div class="player-controls">
+        <div class="buttons">
+          <button id="playPauseBtn" class="control-btn play-btn" disabled><i data-lucide="play"></i></button>
+        </div>
+        <div class="progress-container">
+          <span id="currentTime">0:00</span>
+          <input type="range" id="progressBar" value="0" min="0" max="100">
+          <span id="duration">0:00</span>
+        </div>
+      </div>
+
+      <div class="volume-control">
+        <i data-lucide="volume-2"></i>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.8">
+      </div>
+    </footer>
+  </div>
+
+  <!-- Modal para Subir Audio -->
+  <div class="modal-overlay" id="uploadModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Agregar nuevo audio</h3>
+        <button id="closeModalBtn" class="close-btn">&times;</button>
+      </div>
+      <form id="uploadForm">
+        <div class="form-group">
+          <label>Archivo de Audio</label>
+          <input type="file" id="audioFileInput" accept="audio/*" required>
+        </div>
+        <div class="form-group">
+          <label>Título del Audio</label>
+          <input type="text" id="audioTitleInput" placeholder="Ej: Cortina Informativo 2026" required>
+        </div>
+        <div class="form-group">
+          <label>Categoría</label>
+          <select id="audioCategoryInput" required>
+            <option value="Cortinas">Cortina</option>
+            <option value="Efectos">Efecto (SFX)</option>
+            <option value="Voces">Voz en Off</option>
+            <option value="Pisadores">Pisador / ID</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Etiquetas (separadas por coma)</label>
+          <input type="text" id="audioTagsInput" placeholder="noticias, urgente, tension">
+        </div>
+        <button type="submit" class="btn-primary full-width">Guardar en Biblioteca</button>
+      </form>
+    </div>
+  </div>
+
+  <audio id="audioElement"></audio>
+
+  <script src="app.js"></script>
+</body>
+</html>
