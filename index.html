@@ -14,7 +14,7 @@
     <aside class="sidebar">
       <div class="brand">
         <i data-lucide="disc-3" class="logo-icon"></i>
-        <span>Edipo Sounds</span>
+        <span>SoundVault</span>
       </div>
 
       <button class="btn-primary" id="openModalBtn">
@@ -48,11 +48,11 @@
         <table class="audio-table">
           <thead>
             <tr>
-              <th style="width: 50px;">#</th>
+              <th style="width: 40px;">#</th>
               <th>Título</th>
               <th>Categoría</th>
               <th>Etiquetas</th>
-              <th style="width: 80px; text-align: right;">Acción</th>
+              <th style="width: 130px; text-align: right;">Acciones</th>
             </tr>
           </thead>
           <tbody id="audioList">
@@ -90,18 +90,29 @@
     </footer>
   </div>
 
-  <!-- Modal para Subir Audio -->
+  <!-- Modal para Subir / Editar Audio -->
   <div class="modal-overlay" id="uploadModal">
     <div class="modal">
       <div class="modal-header">
-        <h3>Agregar nuevo audio</h3>
+        <h3 id="modalTitle">Agregar nuevo audio</h3>
         <button id="closeModalBtn" class="close-btn">&times;</button>
       </div>
       <form id="uploadForm">
-        <div class="form-group">
+        <!-- Zona Drag & Drop -->
+        <div class="form-group" id="dropZoneGroup">
           <label>Archivo de Audio</label>
-          <input type="file" id="audioFileInput" accept="audio/*" required>
+          <div class="drop-zone" id="dropZone">
+            <i data-lucide="upload-cloud" class="drop-icon"></i>
+            <p class="drop-text">Arrastra y suelta tu archivo de audio aquí</p>
+            <span class="drop-subtext">o haz clic para seleccionar (MP3, WAV, AAC, OGG)</span>
+            <input type="file" id="audioFileInput" accept="audio/*" class="file-input-hidden">
+          </div>
+          <div id="fileSelectedInfo" class="file-info-badge" style="display: none;">
+            <i data-lucide="file-audio"></i>
+            <span id="fileNameDisplay">nombre_archivo.mp3</span>
+          </div>
         </div>
+
         <div class="form-group">
           <label>Título del Audio</label>
           <input type="text" id="audioTitleInput" placeholder="Ej: Cortina Informativo 2026" required>
@@ -119,12 +130,16 @@
           <label>Etiquetas (separadas por coma)</label>
           <input type="text" id="audioTagsInput" placeholder="noticias, urgente, tension">
         </div>
-        <button type="submit" class="btn-primary full-width">Guardar en Biblioteca</button>
+        <button type="submit" class="btn-primary full-width" id="saveBtn">Guardar en Biblioteca</button>
       </form>
     </div>
   </div>
 
   <audio id="audioElement"></audio>
+
+  <script src="app.js"></script>
+</body>
+</html>
 
   <script src="app.js"></script>
 </body>
