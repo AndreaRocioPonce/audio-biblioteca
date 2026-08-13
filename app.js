@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Inicializar Iconos
+  // Inicializar Iconos Lucide
   lucide.createIcons();
 
   // Elementos DOM
@@ -10,6 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeModalBtn = document.getElementById('closeModalBtn');
   const searchInput = document.getElementById('searchInput');
   const navItems = document.querySelectorAll('.nav-menu li');
+  const modalTitle = document.getElementById('modalTitle');
+  const saveBtn = document.getElementById('saveBtn');
+
+  // Drag & Drop DOM
+  const dropZone = document.getElementById('dropZone');
+  const audioFileInput = document.getElementById('audioFileInput');
+  const fileSelectedInfo = document.getElementById('fileSelectedInfo');
+  const fileNameDisplay = document.getElementById('fileNameDisplay');
+  const dropZoneGroup = document.getElementById('dropZoneGroup');
 
   // Reproductor DOM
   const audioElement = document.getElementById('audioElement');
@@ -23,35 +32,131 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Estado Local
   let tracks = [];
-  let currentTrackIndex = null;
+  let editingTrackId = null;
+  let selectedFile = null;
   let activeCategory = 'all';
 
-  // Modal handlers
-  openModalBtn.addEventListener('click', () => uploadModal.classList.add('active'));
-  closeModalBtn.addEventListener('click', () => uploadModal.classList.remove('active'));
+  // Abrir modal para NUEVO audio
+  openModalBtn.addEventListener('click', () => {
+    resetModalForm();
+    modalTitle.textContent = "Agregar nuevo audio";
+    saveBtn.textContent = "Guardar en Biblioteca";
+    uploadModal.classList.add('active');
+  });
 
-  // Subir Audio
+  // Cerrar modal
+  closeModalBtn.addEventListener('click', () => {
+    uploadModal.classList.remove('active');
+    resetModalForm();
+  });
+
+  // Resetear Formulario Modal
+  function resetModalForm() {
+    uploadForm.reset();
+    editingTrackId = null;
+    selectedFile = null;
+    fileSelectedInfo.style.display = "none";
+    fileNameDisplay.textContent = "";
+    audioFileInput.required = true;
+  }
+
+  // --- LÓGICA DRAG & DROP ---
+  dropZone.addEventListener('click', () => audioFileInput.click());
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.add('dragover');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove('dragover');
+    });
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length > 0 && files[0].type.startsWith('audio/')) {
+      handleFileSelected(files[0]);
+    } else {
+      alert("Por favor arrastra un archivo de audio válido (MP3, WAV, etc.).");
+    }
+  });
+
+  audioFileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      handleFileSelected(e.target.files[0]);
+    }
+  });
+
+  function handleFileSelected(file) {
+    selectedFile = file;
+    fileNameDisplay.textContent = file.name;
+    fileSelectedInfo.style.display = "flex";
+
+    // Auto-completar título con el nombre del archivo si está vacío
+    const titleInput = document.getElementById('audioTitleInput');
+    if (!titleInput.value) {
+      const cleanName = file.name.replace(/\.[^/.]+$/, "");
+      titleInput.value = cleanName;
+    }
+  }
+
+  // --- GUARDAR / EDITAR AUDIO ---
   uploadForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const file = document.getElementById('audioFileInput').files[0];
-    const title = document.getElementById('audioTitleInput').value;
+
+    const title = document.getElementById('audioTitleInput').value.trim();
     const category = document.getElementById('audioCategoryInput').value;
     const tags = document.getElementById('audioTagsInput').value.split(',').map(t => t.trim()).filter(t => t);
 
-    if (file) {
+    if (editingTrackId) {
+      // MODO EDICIÓN
+      const track = tracks.find(t => t.id === editingTrackId);
+      if (track) {
+        track.title = title;
+        track.category = category;
+        track.tags = tags;
+
+        // Si se seleccionó/arrastró un archivo nuevo durante la edición
+        if (selectedFile) {
+          track.fileUrl = URL.createObjectURL(selectedFile);
+          track.fileName = selectedFile.name;
+        }
+
+        // Si se está reproduciendo este audio actualmente, actualizar la barra inferior
+        if (playerTitle.textContent === track.title || audioElement.src === track.fileUrl) {
+          playerTitle.textContent = track.title;
+          playerCategory.textContent = track.category;
+        }
+      }
+    } else {
+      // MODO CREACIÓN NUEVA
+      if (!selectedFile) {
+        alert("Debes arrastrar o seleccionar un archivo de audio.");
+        return;
+      }
+
       const track = {
         id: Date.now(),
-        title: title || file.name,
+        title: title || selectedFile.name,
         category,
         tags,
-        fileUrl: URL.createObjectURL(file)
+        fileUrl: URL.createObjectURL(selectedFile),
+        fileName: selectedFile.name
       };
 
       tracks.push(track);
-      renderTracks();
-      uploadForm.reset();
-      uploadModal.classList.remove('active');
     }
+
+    renderTracks();
+    uploadModal.classList.remove('active');
+    resetModalForm();
   });
 
   // Renderizar Tabla
@@ -66,17 +171,36 @@ document.addEventListener('DOMContentLoaded', () => {
       return matchesCategory && matchesSearch;
     });
 
+    if (filteredTracks.length === 0) {
+      audioList.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">
+            No hay audios guardados en esta categoría. Haz clic en "Subir Audio" y arrastra un archivo.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
     filteredTracks.forEach((track, index) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${index + 1}</td>
-        <td><strong>${track.title}</strong></td>
-        <td>${track.category}</td>
-        <td>${track.tags.map(t => `<span class="tag">${t}</span>`).join('')}</td>
-        <td style="text-align: right;">
-          <button class="btn-play-row" onclick="playTrack(${track.id})">
-            <i data-lucide="play-circle"></i>
-          </button>
+        <td><strong>${escapeHtml(track.title)}</strong></td>
+        <td>${escapeHtml(track.category)}</td>
+        <td>${track.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn-icon play-icon" title="Reproducir" onclick="playTrack(${track.id})">
+              <i data-lucide="play-circle"></i>
+            </button>
+            <button class="btn-icon" title="Editar Información" onclick="openEditModal(${track.id})">
+              <i data-lucide="edit-3"></i>
+            </button>
+            <button class="btn-icon delete-icon" title="Eliminar" onclick="deleteTrack(${track.id})">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>
         </td>
       `;
       audioList.appendChild(tr);
@@ -85,7 +209,35 @@ document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
   }
 
-  // Play audio
+  // --- EDITAR TRACK ---
+  window.openEditModal = function(id) {
+    const track = tracks.find(t => t.id === id);
+    if (!track) return;
+
+    editingTrackId = track.id;
+    modalTitle.textContent = "Editar información del audio";
+    saveBtn.textContent = "Guardar Cambios";
+
+    document.getElementById('audioTitleInput').value = track.title;
+    document.getElementById('audioCategoryInput').value = track.category;
+    document.getElementById('audioTagsInput').value = track.tags.join(', ');
+
+    audioFileInput.required = false;
+    fileNameDisplay.textContent = `Archivo actual: ${track.fileName || 'Audio cargado'}`;
+    fileSelectedInfo.style.display = "flex";
+
+    uploadModal.classList.add('active');
+  };
+
+  // --- ELIMINAR TRACK ---
+  window.deleteTrack = function(id) {
+    if (confirm("¿Estás seguro de que deseas eliminar este audio de la biblioteca?")) {
+      tracks = tracks.filter(t => t.id !== id);
+      renderTracks();
+    }
+  };
+
+  // --- REPRODUCCIÓN DE AUDIO ---
   window.playTrack = function(id) {
     const track = tracks.find(t => t.id === id);
     if (!track) return;
@@ -146,10 +298,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Búsqueda
   searchInput.addEventListener('input', renderTracks);
 
-  // Formato MM:SS
+  // Auxiliares
   function formatTime(seconds) {
     const min = Math.floor(seconds / 60);
     const sec = Math.floor(seconds % 60);
     return `${min}:${sec < 10 ? '0' : ''}${sec}`;
   }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // Render inicial
+  renderTracks();
 });
